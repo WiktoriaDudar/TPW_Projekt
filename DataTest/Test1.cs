@@ -1,6 +1,4 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-namespace Tests
+﻿namespace DataTest
 {
     [TestClass]
     public sealed class Test1

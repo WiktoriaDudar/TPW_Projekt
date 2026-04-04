@@ -1,11 +1,11 @@
 <Solution>
   <Project Path="Data/Data.csproj" Id="5053f6e3-b435-45b9-a334-11f8ec333b71" />
   <Project Path="DataTest/DataTest.csproj" Id="681b0dfc-5df9-46ca-bbdd-42f0551dc5f9" />
-  <Project Path="Logic/Logic.csproj" />
   <Project Path="LogicTest/LogicTest.csproj" Id="443fcdee-69bd-4252-9d09-a643b56e6cce" />
-  <Project Path="Model/Model.csproj" />
+  <Project Path="Logika/Logic.csproj" Id="113a0ec4-eb7b-4a08-8a3e-9263241bcb21" />
+  <Project Path="Model/Model.csproj" Id="46f6ccb2-24f3-402d-bed2-b888b7baddc2" />
   <Project Path="ModelTest/ModelTest.csproj" Id="087c9385-0199-4605-914d-5535ea0b78c8" />
   <Project Path="View/View.csproj" />
-  <Project Path="ViewModel/ViewModel.csproj" />
+  <Project Path="ViewModel/ViewModel.csproj" Id="fd56b9dd-3560-4783-95f8-0b587fdf0aaf" />
   <Project Path="ViewModelTest/ViewModelTest.csproj" Id="e24e37a2-408c-4fd5-b20a-69b57cb74cc2" />
 </Solution>

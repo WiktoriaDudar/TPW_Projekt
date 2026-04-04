@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Logic
 {
-    public class Class1
+    public interface ILogicAPI
     {
-
+       
     }
+
+    
 }

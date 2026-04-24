@@ -7,7 +7,7 @@ namespace Logic
     {
         IList<IBall> Balls { get; }
         void GenerateBalls(int count, double width, double height);
-        void UpdatePositions();
+        void UpdatePositions(double width, double height);
     }
 }
 

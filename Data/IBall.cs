@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+
 namespace Data
 {
     public interface IBall
@@ -12,5 +13,7 @@ namespace Data
         double Y { get; set; }
         double Radius { get; }
         string Color { get; }
+
+        event EventHandler<IVector>? NewPositionNotification;
     }
 }

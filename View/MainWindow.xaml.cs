@@ -1,4 +1,6 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
+using System.Windows.Threading;
 using ViewModel;
 
 namespace View
@@ -6,25 +8,32 @@ namespace View
     public partial class MainWindow : Window
     {
         private readonly ViewModel.ViewModel _vm;
+        private readonly DispatcherTimer _timer;
 
         public MainWindow()
         {
             InitializeComponent();
             _vm = (ViewModel.ViewModel)DataContext;
+
+            _timer = new DispatcherTimer();
+            _timer.Interval = TimeSpan.FromMilliseconds(16);
+            _timer.Tick += (s, e) => _vm.Update(); 
         }
 
         private void Start_Click(object sender, RoutedEventArgs e)
         {
-            double width = BallCanvas.ActualWidth;
-            double height = BallCanvas.ActualHeight;
+            double width = 500;
+            double height = 500;
 
-            if (width == 0 || height == 0)
+            if (int.TryParse(BallCountBox.Text, out int count))
             {
-                width = 800;
-                height = 500;
+                _vm.Start(count, width, height);
+                _timer.Start(); 
             }
-
-            _vm.Start(20, width, height);
+            else
+            {
+                MessageBox.Show("Wpisz poprawną liczbę.");
+            }
         }
     }
 }

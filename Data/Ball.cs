@@ -1,23 +1,53 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 
 namespace Data
 {
-  
-    public class Ball : IBall
+    public class Ball : IBall, INotifyPropertyChanged
     {
-        public double X { get; set; }
-        public double Y { get; set; }
+        private double x;
+        private double y;
+
+        public event EventHandler<IVector>? NewPositionNotification;
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        public double X
+        {
+            get => x;
+            set
+            {
+                x = value;
+                OnPropertyChanged();
+                NewPositionNotification?.Invoke(this, new Vector(x, y));
+            }
+        }
+
+        public double Y
+        {
+            get => y;
+            set
+            {
+                y = value;
+                OnPropertyChanged();
+                NewPositionNotification?.Invoke(this, new Vector(x, y));
+            }
+        }
+
         public double Radius { get; }
         public string Color { get; }
 
         public Ball(double x, double y, double radius, string color)
         {
-            X = x;
-            Y = y;
+            this.x = x;
+            this.y = y;
             Radius = radius;
             Color = color;
         }
+
+        protected void OnPropertyChanged([CallerMemberName] string name = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        }
     }
-
 }
-

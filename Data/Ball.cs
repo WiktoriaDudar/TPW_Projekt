@@ -37,6 +37,8 @@ namespace Data
         public double Radius { get; }
         public string Color { get; }
 
+        public double Diameter => Radius * 2;
+
         public Ball(double x, double y, double radius, string color)
         {
             this.x = x;

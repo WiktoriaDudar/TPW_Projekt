@@ -29,24 +29,24 @@
                     Click="Start_Click"/>
         </StackPanel>
 
+   
         <Canvas x:Name="BallCanvas"
                 Grid.Row="1"
-                Width="500"
-                Height="500"
                 Background="White"
-                HorizontalAlignment="Left"
-                VerticalAlignment="Top">
+                SizeChanged="Canvas_SizeChanged">
 
-            <Rectangle Width="500"
-                       Height="500"
-                       Stroke="Black"
-                       StrokeThickness="3"
-                       Fill="LightGray" Canvas.Left="41" Canvas.Top="38"/>
+        
+            <Rectangle
+                Stroke="Black"
+                StrokeThickness="3"
+                Fill="LightGray"
+                Width="{Binding ActualWidth, ElementName=BallCanvas}"
+                Height="{Binding ActualHeight, ElementName=BallCanvas}"/>
 
-            <ItemsControl ItemsSource="{Binding Balls}" Canvas.Left="41" Canvas.Top="38">
+            <ItemsControl ItemsSource="{Binding Balls}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <Canvas Width="500" Height="500"/>
+                        <Canvas />
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
 

@@ -12,6 +12,9 @@ namespace Logic
         private readonly Dictionary<IBall, (double vx, double vy)> _velocities =
             new Dictionary<IBall, (double vx, double vy)>();
 
+        public double MaxX { get; private set; } = 1000;
+        public double MaxY { get; private set; } = 1000;
+
         public IList<IBall> Balls => _repository.Balls;
 
         public LogicAPI(IDataRepository repository)
@@ -24,7 +27,14 @@ namespace Logic
             _repository = new DataRepository();
         }
 
-        public void GenerateBalls(int count, double width, double height)
+    
+        public void GenerateBalls(int count)
+        {
+            GenerateBallsInternal(count, MaxX, MaxY);
+        }
+
+       
+        private void GenerateBallsInternal(int count, double width, double height)
         {
             _repository.Clear();
             _velocities.Clear();
@@ -48,7 +58,18 @@ namespace Logic
             }
         }
 
-        public void UpdatePositions(double width, double height)
+        public void UpdatePositions()
+        {
+            UpdatePositionsInternal(MaxX, MaxY);
+        }
+
+        public void SetBounds(double width, double height)
+        {
+            MaxX = width;
+            MaxY = height;
+        }
+
+        private void UpdatePositionsInternal(double width, double height)
         {
             foreach (var ball in Balls)
             {
@@ -59,17 +80,16 @@ namespace Logic
                 ball.Y += vy;
 
                 if (ball.X - r < 0 || ball.X + r > width)
-                {
                     vx = -vx;
-                }
 
                 if (ball.Y - r < 0 || ball.Y + r > height)
-                {
                     vy = -vy;
-                }
 
                 _velocities[ball] = (vx, vy);
             }
         }
+
+        public double GetBallX(int id) => Balls[id].X;
+        public double GetBallY(int id) => Balls[id].Y;
     }
 }

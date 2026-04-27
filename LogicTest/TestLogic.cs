@@ -22,7 +22,7 @@ namespace LogicTest
         {
             ILogicAPI logic = new LogicAPI(new FakeRepository());
 
-            logic.GenerateBalls(10, 500, 500);
+            logic.GenerateBalls(10);
 
             Assert.AreEqual(10, logic.Balls.Count);
         }
@@ -32,15 +32,15 @@ namespace LogicTest
         {
             ILogicAPI logic = new LogicAPI(new FakeRepository());
 
-            logic.GenerateBalls(20, 400, 300);
+            logic.GenerateBalls(20);
 
             foreach (var ball in logic.Balls)
             {
                 Assert.IsTrue(ball.X >= ball.Radius);
-                Assert.IsTrue(ball.X <= 400 - ball.Radius);
+                Assert.IsTrue(ball.X <= logic.MaxX - ball.Radius);
 
                 Assert.IsTrue(ball.Y >= ball.Radius);
-                Assert.IsTrue(ball.Y <= 300 - ball.Radius);
+                Assert.IsTrue(ball.Y <= logic.MaxY - ball.Radius);
             }
         }
 
@@ -49,12 +49,12 @@ namespace LogicTest
         {
             ILogicAPI logic = new LogicAPI(new FakeRepository());
 
-            logic.GenerateBalls(1, 500, 500);
+            logic.GenerateBalls(1);
 
             double oldX = logic.Balls[0].X;
             double oldY = logic.Balls[0].Y;
 
-            logic.UpdatePositions(500, 500);
+            logic.UpdatePositions();
 
             Assert.AreNotEqual(oldX, logic.Balls[0].X);
             Assert.AreNotEqual(oldY, logic.Balls[0].Y);
@@ -66,7 +66,7 @@ namespace LogicTest
             FakeRepository repo = new FakeRepository();
             ILogicAPI logic = new LogicAPI(repo);
 
-            logic.GenerateBalls(5, 300, 300);
+            logic.GenerateBalls(5);
 
             Assert.AreEqual(5, repo.Balls.Count);
         }

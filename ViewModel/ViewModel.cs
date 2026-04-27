@@ -13,9 +13,6 @@ namespace ViewModel
 
         public ObservableCollection<IBall> Balls { get; } = new ObservableCollection<IBall>();
 
-        private double width;
-        private double height;
-
         public ViewModel()
         {
             model = new ModelAPI();
@@ -25,25 +22,35 @@ namespace ViewModel
         }
 
         public void Start(int count, double width, double height)
-{
-    this.width = width;
-    this.height = height;
-
-    model.Logic.GenerateBalls(count, width, height);
-
-    Balls.Clear();
-    foreach (var ball in model.Logic.Balls)
-    {
-        Balls.Add(ball);
-    }
-
-    timer.Start();
-}
-
-
-        public void Update()
         {
-            model.Logic.UpdatePositions(width, height);
+            model.SetWindowSize(width, height);
+
+            model.Logic.GenerateBalls(count);
+
+            Balls.Clear();
+            foreach (var ball in model.Logic.Balls)
+            {
+                Balls.Add(ball);
+            }
+
+            timer.Start();
         }
+
+        private void Update()
+        {
+            model.Logic.UpdatePositions();
+
+            for (int i = 0; i < Balls.Count; i++)
+            {
+                Balls[i].X = model.GetBallX(i);
+                Balls[i].Y = model.GetBallY(i);
+            }
+        }
+
+        public void UpdateWindowSize(double width, double height)
+        {
+            model.SetWindowSize(width, height);
+        }
+
     }
 }

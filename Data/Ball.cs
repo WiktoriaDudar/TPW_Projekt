@@ -4,13 +4,14 @@ using System.Runtime.CompilerServices;
 
 namespace Data
 {
-    public class Ball : IBall, INotifyPropertyChanged
+    public class Ball : IBall
     {
         private double x;
         private double y;
+        private IVector velocity;
 
-        public event EventHandler<IVector>? NewPositionNotification;
         public event PropertyChangedEventHandler? PropertyChanged;
+        public event EventHandler<IVector>? NewPositionNotification;
 
         public double X
         {
@@ -19,7 +20,7 @@ namespace Data
             {
                 x = value;
                 OnPropertyChanged();
-                NewPositionNotification?.Invoke(this, new Vector(x, y));
+                NewPositionNotification?.Invoke(this, Velocity);
             }
         }
 
@@ -30,24 +31,38 @@ namespace Data
             {
                 y = value;
                 OnPropertyChanged();
-                NewPositionNotification?.Invoke(this, new Vector(x, y));
+                NewPositionNotification?.Invoke(this, Velocity);
             }
         }
 
-        public double Radius { get; }
+        public double Diameter { get; }
+        public double Radius => Diameter/2;
+
         public string Color { get; }
 
-        public double Diameter => Radius * 2;
+        public IVector Velocity
+        {
+            get => velocity;
+            set
+            {
+                velocity = value;
+                OnPropertyChanged();
+            }
+        }
 
-        public Ball(double x, double y, double radius, string color)
+        public double Mass { get; }
+
+        public Ball(double x, double y, double diameter, string color, IVector velocity, double mass)
         {
             this.x = x;
             this.y = y;
-            Radius = radius;
+            Diameter = diameter;
             Color = color;
+            Velocity = velocity;
+            Mass = mass;
         }
 
-        protected void OnPropertyChanged([CallerMemberName] string name = null)
+        private void OnPropertyChanged([CallerMemberName] string? name = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }

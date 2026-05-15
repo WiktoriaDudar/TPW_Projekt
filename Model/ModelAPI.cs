@@ -20,9 +20,8 @@ namespace Model
         {
             windowWidth = width;
             windowHeight = height;
-            Logic.SetBounds(width, height); 
+            Logic.SetBounds(width, height);
         }
-
 
         public double GetBallX(int id)
         {
@@ -32,6 +31,11 @@ namespace Model
         public double GetBallY(int id)
         {
             return (Logic.GetBallY(id) / Logic.MaxY) * windowHeight;
+        }
+
+        public double GetBallDiameter(int id)
+        {
+            return (Logic.Balls[id].Diameter / Logic.MaxX) * windowWidth;
         }
     }
 }

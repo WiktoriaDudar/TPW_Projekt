@@ -8,7 +8,14 @@ namespace Data
 {
     public interface IVector
     {
-        double x { get; }
-        double y { get; }
+        double X { get; }
+        double Y { get; }
+
+        double Length { get; }
+        IVector Normalize();
+        IVector Add(IVector other);
+        IVector Subtract(IVector other);
+        IVector Multiply(double scalar);
     }
 }
+

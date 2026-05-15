@@ -11,11 +11,12 @@ namespace Logic
 
         void UpdatePositions();
 
+        void SetBounds(double width, double height);
+
         double MaxX { get; }
         double MaxY { get; }
 
         double GetBallX(int id);
         double GetBallY(int id);
-        void SetBounds(double width, double height);
     }
 }

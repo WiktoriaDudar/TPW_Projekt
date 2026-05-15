@@ -1,5 +1,4 @@
 ﻿using System.Collections.ObjectModel;
-using Model;
 using Data;
 
 namespace ViewModel
@@ -8,6 +7,6 @@ namespace ViewModel
     {
         ObservableCollection<IBall> Balls { get; }
         void Start(int count, double width, double height);
+        void UpdateWindowSize(double width, double height);
     }
 }
-

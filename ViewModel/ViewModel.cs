@@ -1,8 +1,9 @@
-﻿using System;
+﻿using Data;
+using Model;
+using System;
 using System.Collections.ObjectModel;
 using System.Timers;
-using Model;
-using Data;
+using System.Windows;       
 
 namespace ViewModel
 {
@@ -51,6 +52,5 @@ namespace ViewModel
         {
             model.SetWindowSize(width, height);
         }
-
     }
 }

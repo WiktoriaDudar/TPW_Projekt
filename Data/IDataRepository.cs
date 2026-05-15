@@ -11,5 +11,6 @@ namespace Data
         IList<IBall> Balls { get; }
         void AddBall(IBall ball);
         void Clear();
+        IList<IBall> GetBallsSnapshot();
     }
 }

@@ -8,5 +8,6 @@ namespace Model
         void SetWindowSize(double width, double height);
         double GetBallX(int id);
         double GetBallY(int id);
+        double GetBallDiameter(int id);
     }
 }

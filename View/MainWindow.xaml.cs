@@ -11,6 +11,9 @@ namespace View
         public MainWindow()
         {
             InitializeComponent();
+
+            DataContext = new ViewModel.ViewModel(Application.Current.Dispatcher);
+
             _vm = (ViewModel.ViewModel)DataContext;
         }
 
@@ -27,6 +30,8 @@ namespace View
             {
                 MessageBox.Show("Wpisz poprawną liczbę.");
             }
+
+            StartButton.IsEnabled = false;
         }
 
         private void Canvas_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -36,7 +41,5 @@ namespace View
                 _vm.UpdateWindowSize(BallCanvas.ActualWidth, BallCanvas.ActualHeight);
             }
         }
-
-
     }
 }

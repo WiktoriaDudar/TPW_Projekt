@@ -9,8 +9,6 @@ namespace Logic
 
         void GenerateBalls(int count);
 
-        void UpdatePositions();
-
         void SetBounds(double width, double height);
 
         double MaxX { get; }

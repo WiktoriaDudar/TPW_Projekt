@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Data;
 
 namespace Logic
@@ -52,25 +53,45 @@ namespace Logic
 
                     double mass = diameter;
 
-                    var ball = new Ball(x, y, diameter, "red", velocity, mass);
+                    var ball = new Ball(
+                        x,
+                        y,
+                        diameter,
+                        "red",
+                        velocity,
+                        mass
+                    );
 
                     _repository.AddBall(ball);
+
+                    Task.Run(async () =>
+                    {
+                        while (true)
+                        {
+                            lock (_lock)
+                            {
+                                UpdateBallPosition(ball);
+                            }
+
+                            await Task.Delay(16);
+                        }
+                    });
                 }
-            }
-        }
 
-        public void UpdatePositions()
-        {
-            lock (_lock)
-            {
-                var balls = _repository.GetBallsSnapshot();
-
-                foreach (var ball in balls)
+                Task.Run(async () =>
                 {
-                    UpdateBallPosition(ball);
-                }
+                    while (true)
+                    {
+                        lock (_lock)
+                        {
+                            HandleCollisions(
+                                _repository.GetBallsSnapshot()
+                            );
+                        }
 
-                HandleCollisions(balls);
+                        await Task.Delay(16);
+                    }
+                });
             }
         }
 
@@ -83,12 +104,18 @@ namespace Logic
 
             if (ball.X - radius < 0 || ball.X + radius > MaxX)
             {
-                ball.Velocity = new Vector(-ball.Velocity.X, ball.Velocity.Y);
+                ball.Velocity = new Vector(
+                    -ball.Velocity.X,
+                    ball.Velocity.Y
+                );
             }
 
             if (ball.Y - radius < 0 || ball.Y + radius > MaxY)
             {
-                ball.Velocity = new Vector(ball.Velocity.X, -ball.Velocity.Y);
+                ball.Velocity = new Vector(
+                    ball.Velocity.X,
+                    -ball.Velocity.Y
+                );
             }
         }
 
@@ -107,9 +134,12 @@ namespace Logic
         {
             double dx = b.X - a.X;
             double dy = b.Y - a.Y;
+
             double distance = Math.Sqrt(dx * dx + dy * dy);
 
-            double minDist = (a.Diameter / 2) + (b.Diameter / 2);
+            double minDist =
+                (a.Diameter / 2) +
+                (b.Diameter / 2);
 
             if (distance == 0 || distance > minDist)
                 return;
@@ -117,14 +147,32 @@ namespace Logic
             double nx = dx / distance;
             double ny = dy / distance;
 
-            double va = a.Velocity.X * nx + a.Velocity.Y * ny;
-            double vb = b.Velocity.X * nx + b.Velocity.Y * ny;
+            double overlap = minDist - distance;
+
+            a.X -= (overlap / 2) * nx;
+            a.Y -= (overlap / 2) * ny;
+
+            b.X += (overlap / 2) * nx;
+            b.Y += (overlap / 2) * ny;
+
+            double va =
+                a.Velocity.X * nx +
+                a.Velocity.Y * ny;
+
+            double vb =
+                b.Velocity.X * nx +
+                b.Velocity.Y * ny;
 
             double ma = a.Mass;
             double mb = b.Mass;
 
-            double vaNew = (va * (ma - mb) + 2 * mb * vb) / (ma + mb);
-            double vbNew = (vb * (mb - ma) + 2 * ma * va) / (ma + mb);
+            double vaNew =
+                (va * (ma - mb) + 2 * mb * vb)
+                / (ma + mb);
+
+            double vbNew =
+                (vb * (mb - ma) + 2 * ma * va)
+                / (ma + mb);
 
             a.Velocity = new Vector(
                 a.Velocity.X + (vaNew - va) * nx,

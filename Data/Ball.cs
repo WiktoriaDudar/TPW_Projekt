@@ -6,6 +6,8 @@ namespace Data
 {
     public class Ball : IBall
     {
+        private readonly object _lock = new object();
+
         private double x;
         private double y;
         private IVector velocity;
@@ -15,37 +17,64 @@ namespace Data
 
         public double X
         {
-            get => x;
+            get
+            {
+                lock (_lock)
+                    return x;
+            }
             set
             {
-                x = value;
+                IVector velSnapshot;
+                lock (_lock)
+                {
+                    x = value;
+                    velSnapshot = velocity;
+                }
+
                 OnPropertyChanged();
-                NewPositionNotification?.Invoke(this, Velocity);
+                NewPositionNotification?.Invoke(this, velSnapshot);
             }
         }
 
         public double Y
         {
-            get => y;
+            get
+            {
+                lock (_lock)
+                    return y;
+            }
             set
             {
-                y = value;
+                IVector velSnapshot;
+                lock (_lock)
+                {
+                    y = value;
+                    velSnapshot = velocity;
+                }
+
                 OnPropertyChanged();
-                NewPositionNotification?.Invoke(this, Velocity);
+                NewPositionNotification?.Invoke(this, velSnapshot);
             }
         }
 
         public double Diameter { get; }
-        public double Radius => Diameter/2;
+        public double Radius => Diameter / 2;
 
         public string Color { get; }
 
         public IVector Velocity
         {
-            get => velocity;
+            get
+            {
+                lock (_lock)
+                    return velocity;
+            }
             set
             {
-                velocity = value;
+                lock (_lock)
+                {
+                    velocity = value;
+                }
                 OnPropertyChanged();
             }
         }
@@ -58,7 +87,7 @@ namespace Data
             this.y = y;
             Diameter = diameter;
             Color = color;
-            Velocity = velocity;
+            this.velocity = velocity;
             Mass = mass;
         }
 

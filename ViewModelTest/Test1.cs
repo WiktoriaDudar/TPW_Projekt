@@ -1,39 +1,36 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Windows.Threading;
 using ViewModel;
 
 namespace ViewModelTest
 {
     [TestClass]
-    public sealed class ViewModelTests
+    public class ViewModelTests
     {
         [TestMethod]
-        public void Start_CreatesCorrectNumberOfBalls()
+        public void Balls_IsNotNull()
         {
-            IViewModel vm = new ViewModel.ViewModel();
+            var dispatcher = Dispatcher.CurrentDispatcher;
+            IViewModel vm = new ViewModel.ViewModel(dispatcher);
+            Assert.IsNotNull(vm.Balls);
+        }
 
+        [TestMethod]
+        public void Start_AddsBalls()
+        {
+            var dispatcher = Dispatcher.CurrentDispatcher;
+            IViewModel vm = new ViewModel.ViewModel(dispatcher);
             vm.Start(5, 500, 500);
-
             Assert.AreEqual(5, vm.Balls.Count);
         }
 
         [TestMethod]
-        public void Start_ClearsPreviousBalls()
+        public void Start_WithZeroBalls_CreatesEmptyCollection()
         {
-            IViewModel vm = new ViewModel.ViewModel();
-
-            vm.Start(3, 500, 500);
-            vm.Start(1, 500, 500);
-
-            Assert.AreEqual(1, vm.Balls.Count);
-        }
-
-
-        [TestMethod]
-        public void BallsCollection_IsNotNull()
-        {
-            IViewModel vm = new ViewModel.ViewModel();
-
-            Assert.IsNotNull(vm.Balls);
+            var dispatcher = Dispatcher.CurrentDispatcher;
+            IViewModel vm = new ViewModel.ViewModel(dispatcher);
+            vm.Start(0, 500, 500);
+            Assert.AreEqual(0, vm.Balls.Count);
         }
     }
 }

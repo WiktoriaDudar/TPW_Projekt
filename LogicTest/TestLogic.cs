@@ -1,73 +1,102 @@
 ﻿using Logic;
 using Data;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace LogicTest
 {
     public class FakeRepository : IDataRepository
     {
         public IList<IBall> Balls { get; } = new List<IBall>();
-
         public void AddBall(IBall ball) => Balls.Add(ball);
-
         public void Clear() => Balls.Clear();
+        public IList<IBall> GetBallsSnapshot() => new List<IBall>(Balls);
     }
 
     [TestClass]
-    public class LogicTests
+    public class LogicAPITests
     {
+        private void InvokePrivateVoid(object obj, string method, params object[] args)
+        {
+            var m = obj.GetType().GetMethod(method, BindingFlags.NonPublic | BindingFlags.Instance);
+            m.Invoke(obj, args);
+        }
+
         [TestMethod]
         public void GenerateBalls_CreatesCorrectNumber()
         {
-            ILogicAPI logic = new LogicAPI(new FakeRepository());
-
+            var repo = new FakeRepository();
+            var logic = new LogicAPI(repo);
             logic.GenerateBalls(10);
-
             Assert.AreEqual(10, logic.Balls.Count);
+        }
+
+        [TestMethod]
+        public void GenerateBalls_BallsHaveCorrectMassAndVelocity()
+        {
+            var repo = new FakeRepository();
+            var logic = new LogicAPI(repo);
+            logic.GenerateBalls(5);
+
+            foreach (var b in logic.Balls)
+            {
+                Assert.AreEqual(20, b.Diameter);
+                Assert.AreEqual(20, b.Mass);
+                Assert.IsTrue(b.Velocity.Length > 0);
+            }
         }
 
         [TestMethod]
         public void GenerateBalls_BallsAreWithinBounds()
         {
-            ILogicAPI logic = new LogicAPI(new FakeRepository());
-
+            var repo = new FakeRepository();
+            var logic = new LogicAPI(repo);
+            logic.SetBounds(500, 300);
             logic.GenerateBalls(20);
 
             foreach (var ball in logic.Balls)
             {
                 Assert.IsTrue(ball.X >= ball.Radius);
                 Assert.IsTrue(ball.X <= logic.MaxX - ball.Radius);
-
                 Assert.IsTrue(ball.Y >= ball.Radius);
                 Assert.IsTrue(ball.Y <= logic.MaxY - ball.Radius);
             }
         }
 
         [TestMethod]
-        public void UpdatePositions_ChangesBallPosition()
+        public void UpdateBallPosition_ReflectsFromWalls()
         {
-            ILogicAPI logic = new LogicAPI(new FakeRepository());
+            var repo = new FakeRepository();
+            var logic = new LogicAPI(repo);
+            var ball = new Ball(5, 5, 20, "red", new Vector(-3, -3), 20);
+            repo.AddBall(ball);
+            InvokePrivateVoid(logic, "UpdateBallPosition", ball);
+            Assert.IsTrue(ball.Velocity.X > 0);
+            Assert.IsTrue(ball.Velocity.Y > 0);
+        }
 
-            logic.GenerateBalls(1);
-
-            double oldX = logic.Balls[0].X;
-            double oldY = logic.Balls[0].Y;
-
-            logic.UpdatePositions();
-
-            Assert.AreNotEqual(oldX, logic.Balls[0].X);
-            Assert.AreNotEqual(oldY, logic.Balls[0].Y);
+        [TestMethod]
+        public void ResolveCollision_ChangesVelocities()
+        {
+            var repo = new FakeRepository();
+            var logic = new LogicAPI(repo);
+            var a = new Ball(50, 50, 20, "red", new Vector(1, 0), 20);
+            var b = new Ball(60, 50, 20, "red", new Vector(-1, 0), 20);
+            repo.AddBall(a);
+            repo.AddBall(b);
+            InvokePrivateVoid(logic, "ResolveCollision", a, b);
+            Assert.AreNotEqual(1, a.Velocity.X);
+            Assert.AreNotEqual(-1, b.Velocity.X);
         }
 
         [TestMethod]
         public void Logic_UsesInjectedRepository()
         {
-            FakeRepository repo = new FakeRepository();
-            ILogicAPI logic = new LogicAPI(repo);
-
+            var repo = new FakeRepository();
+            var logic = new LogicAPI(repo);
             logic.GenerateBalls(5);
-
             Assert.AreEqual(5, repo.Balls.Count);
         }
     }

@@ -24,6 +24,7 @@ namespace ViewModel
             model.Logic.GenerateBalls(count);
 
             Balls.Clear();
+
             foreach (var ball in model.Logic.Balls)
             {
                 ball.NewPositionNotification += OnBallPositionChanged;
@@ -33,7 +34,10 @@ namespace ViewModel
 
         private void OnBallPositionChanged(object? sender, IVector velocity)
         {
-            _dispatcher.Invoke(() => { });
+            if (_dispatcher.HasShutdownStarted || _dispatcher.HasShutdownFinished)
+                return;
+
+            _dispatcher.BeginInvoke(() => { });
         }
 
         public void UpdateWindowSize(double width, double height)

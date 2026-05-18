@@ -72,7 +72,7 @@ namespace LogicTest
             var logic = new LogicAPI(repo);
             var ball = new Ball(5, 5, 20, "red", new Vector(-3, -3), 20);
             repo.AddBall(ball);
-            InvokePrivateVoid(logic, "UpdateBall", ball);
+            InvokePrivateVoid(logic, "UpdateBallPosition", ball);
             Assert.IsTrue(ball.Velocity.X > 0);
             Assert.IsTrue(ball.Velocity.Y > 0);
         }

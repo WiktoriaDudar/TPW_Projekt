@@ -102,16 +102,40 @@ namespace Logic
 
             double radius = ball.Diameter / 2;
 
-            if (ball.X - radius < 0 || ball.X + radius > MaxX)
+            if (ball.X - radius < 0)
             {
+                ball.X = radius;
+
                 ball.Velocity = new Vector(
                     -ball.Velocity.X,
                     ball.Velocity.Y
                 );
             }
 
-            if (ball.Y - radius < 0 || ball.Y + radius > MaxY)
+            if (ball.X + radius > MaxX)
             {
+                ball.X = MaxX - radius;
+
+                ball.Velocity = new Vector(
+                    -ball.Velocity.X,
+                    ball.Velocity.Y
+                );
+            }
+
+            if (ball.Y - radius < 0)
+            {
+                ball.Y = radius;
+
+                ball.Velocity = new Vector(
+                    ball.Velocity.X,
+                    -ball.Velocity.Y
+                );
+            }
+
+            if (ball.Y + radius > MaxY)
+            {
+                ball.Y = MaxY - radius;
+
                 ball.Velocity = new Vector(
                     ball.Velocity.X,
                     -ball.Velocity.Y
@@ -146,6 +170,12 @@ namespace Logic
 
             double nx = dx / distance;
             double ny = dy / distance;
+            double relativeVelocity =
+
+            (b.Velocity.X - a.Velocity.X) * nx + (b.Velocity.Y - a.Velocity.Y) * ny;
+
+                    if (relativeVelocity > 0)
+                        return;
 
             double overlap = minDist - distance;
 
@@ -174,14 +204,36 @@ namespace Logic
                 (vb * (mb - ma) + 2 * ma * va)
                 / (ma + mb);
 
-            a.Velocity = new Vector(
+            Vector newVelocityA = new Vector(
                 a.Velocity.X + (vaNew - va) * nx,
                 a.Velocity.Y + (vaNew - va) * ny
             );
 
-            b.Velocity = new Vector(
+            Vector newVelocityB = new Vector(
                 b.Velocity.X + (vbNew - vb) * nx,
                 b.Velocity.Y + (vbNew - vb) * ny
+            );
+
+            double targetSpeed = 3.0;
+
+            double speedA = Math.Sqrt(
+                newVelocityA.X * newVelocityA.X +
+                newVelocityA.Y * newVelocityA.Y
+            );
+
+            double speedB = Math.Sqrt(
+                newVelocityB.X * newVelocityB.X +
+                newVelocityB.Y * newVelocityB.Y
+            );
+
+            a.Velocity = new Vector(
+                newVelocityA.X / speedA * targetSpeed,
+                newVelocityA.Y / speedA * targetSpeed
+            );
+
+            b.Velocity = new Vector(
+                newVelocityB.X / speedB * targetSpeed,
+                newVelocityB.Y / speedB * targetSpeed
             );
         }
 

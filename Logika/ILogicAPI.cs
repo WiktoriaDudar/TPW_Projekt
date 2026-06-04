@@ -16,5 +16,7 @@ namespace Logic
 
         double GetBallX(int id);
         double GetBallY(int id);
+        void StartSimulation();
+        void StopSimulation();
     }
 }

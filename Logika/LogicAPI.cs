@@ -1,20 +1,35 @@
-﻿using System;
+﻿using Data;
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
-using Data;
 
 namespace Logic
 {
     public class LogicAPI : ILogicAPI
     {
         private readonly IDataRepository _repository;
+
         private readonly object _lock = new object();
+
+        private static int _nextId = 0;
+
         private readonly Random _random = new Random();
+
+        private readonly ConcurrentQueue<BallLogEntry> _logQueue = new();
+        private readonly SemaphoreSlim _fileLock = new(1, 1);
+
 
         public double MaxX { get; private set; } = 1000;
         public double MaxY { get; private set; } = 1000;
 
         public IList<IBall> Balls => _repository.Balls;
+
+        private int _running = 0;
 
         public LogicAPI(IDataRepository repository)
         {
@@ -25,8 +40,11 @@ namespace Logic
 
         public void SetBounds(double width, double height)
         {
-            MaxX = width;
-            MaxY = height;
+            lock (_lock)
+            {
+                MaxX = width;
+                MaxY = height;
+            }
         }
 
         public void GenerateBalls(int count)
@@ -34,6 +52,7 @@ namespace Logic
             lock (_lock)
             {
                 _repository.Clear();
+                
 
                 for (int i = 0; i < count; i++)
                 {
@@ -44,114 +63,124 @@ namespace Logic
                     double y = radius + _random.NextDouble() * (MaxY - diameter);
 
                     double angle = _random.NextDouble() * 2 * Math.PI;
-                    double speed = 3.0;
+                    double speed = 200.0;
 
-                    IVector velocity = new Vector(
+                    var velocity = new Vector(
                         Math.Cos(angle) * speed,
                         Math.Sin(angle) * speed
                     );
 
-                    double mass = diameter;
-
                     var ball = new Ball(
+                        _nextId++,
                         x,
                         y,
                         diameter,
                         "red",
                         velocity,
-                        mass
+                        diameter
                     );
 
                     _repository.AddBall(ball);
-
-                    Task.Run(async () =>
-                    {
-                        while (true)
-                        {
-                            lock (_lock)
-                            {
-                                UpdateBallPosition(ball);
-                            }
-
-                            await Task.Delay(16);
-                        }
-                    });
+                   
                 }
+            }
 
-                Task.Run(async () =>
+            StartSimulation();
+            StartLoggingThread();
+        }
+
+        public void StartSimulation()
+        {
+            if (Interlocked.Exchange(ref _running, 1) == 1)
+                return;
+
+            Task.Run(() =>
+            {
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+
+                double last = sw.Elapsed.TotalSeconds;
+                double accumulator = 0;
+                const double fixedDt = 0.01;
+
+                while (Volatile.Read(ref _running) == 1)
                 {
-                    while (true)
+                    double now = sw.Elapsed.TotalSeconds;
+                    double frameTime = now - last;
+                    last = now;
+
+                    if (frameTime > 0.05)
+                        frameTime = 0.05;
+
+                    accumulator += frameTime;
+
+                    while (accumulator >= fixedDt)
                     {
+                        List<IBall> snapshot;
+
                         lock (_lock)
+                            snapshot = _repository.GetBallsSnapshot().ToList();
+
+                        foreach (var ball in snapshot)
                         {
-                            HandleCollisions(
-                                _repository.GetBallsSnapshot()
-                            );
+                            UpdateBallPosition(ball, fixedDt);
                         }
 
-                        await Task.Delay(16);
+                        for (int i = 0; i < snapshot.Count; i++)
+                            HandleCollisions(snapshot, i);
+
+                        accumulator -= fixedDt;
                     }
-                });
-            }
-        }
-
-        private void UpdateBallPosition(IBall ball)
-        {
-            ball.X += ball.Velocity.X;
-            ball.Y += ball.Velocity.Y;
-
-            double radius = ball.Diameter / 2;
-
-            if (ball.X - radius < 0)
-            {
-                ball.X = radius;
-
-                ball.Velocity = new Vector(
-                    -ball.Velocity.X,
-                    ball.Velocity.Y
-                );
-            }
-
-            if (ball.X + radius > MaxX)
-            {
-                ball.X = MaxX - radius;
-
-                ball.Velocity = new Vector(
-                    -ball.Velocity.X,
-                    ball.Velocity.Y
-                );
-            }
-
-            if (ball.Y - radius < 0)
-            {
-                ball.Y = radius;
-
-                ball.Velocity = new Vector(
-                    ball.Velocity.X,
-                    -ball.Velocity.Y
-                );
-            }
-
-            if (ball.Y + radius > MaxY)
-            {
-                ball.Y = MaxY - radius;
-
-                ball.Velocity = new Vector(
-                    ball.Velocity.X,
-                    -ball.Velocity.Y
-                );
-            }
-        }
-
-        private void HandleCollisions(IList<IBall> balls)
-        {
-            for (int i = 0; i < balls.Count; i++)
-            {
-                for (int j = i + 1; j < balls.Count; j++)
-                {
-                    ResolveCollision(balls[i], balls[j]);
                 }
+            });
+        }
+
+        public void StopSimulation()
+        {
+            Interlocked.Exchange(ref _running, 0);
+        }
+
+        private void UpdateBallPosition(IBall ball, double dt)
+        {
+            ball.X += ball.Velocity.X * dt;
+            ball.Y += ball.Velocity.Y * dt;
+
+            double r = ball.Diameter / 2;
+
+            if (ball.X - r < 0)
+            {
+                ball.X = r;
+                ball.Velocity = new Vector(-ball.Velocity.X, ball.Velocity.Y);
+
             }
+
+            if (ball.X + r > MaxX)
+            {
+                ball.X = MaxX - r;
+                ball.Velocity = new Vector(-ball.Velocity.X, ball.Velocity.Y);
+
+            }
+
+            if (ball.Y - r < 0)
+            {
+                ball.Y = r;
+                ball.Velocity = new Vector(ball.Velocity.X, -ball.Velocity.Y);
+
+            }
+
+            if (ball.Y + r > MaxY)
+            {
+                ball.Y = MaxY - r;
+                ball.Velocity = new Vector(ball.Velocity.X, -ball.Velocity.Y);
+
+            }
+
+            LogBall(ball);
+        }
+
+        private void HandleCollisions(IList<IBall> balls, int i)
+        {
+            for (int j = i + 1; j < balls.Count; j++)
+                ResolveCollision(balls[i], balls[j]);
         }
 
         private void ResolveCollision(IBall a, IBall b)
@@ -159,23 +188,24 @@ namespace Logic
             double dx = b.X - a.X;
             double dy = b.Y - a.Y;
 
-            double distance = Math.Sqrt(dx * dx + dy * dy);
+            double distSq = dx * dx + dy * dy;
+            if (distSq == 0) return;
 
-            double minDist =
-                (a.Diameter / 2) +
-                (b.Diameter / 2);
+            double distance = Math.Sqrt(distSq);
+            double minDist = (a.Diameter / 2) + (b.Diameter / 2);
 
-            if (distance == 0 || distance > minDist)
+            if (distance > minDist)
                 return;
 
             double nx = dx / distance;
             double ny = dy / distance;
-            double relativeVelocity =
 
-            (b.Velocity.X - a.Velocity.X) * nx + (b.Velocity.Y - a.Velocity.Y) * ny;
+            double relVel =
+                (b.Velocity.X - a.Velocity.X) * nx +
+                (b.Velocity.Y - a.Velocity.Y) * ny;
 
-                    if (relativeVelocity > 0)
-                        return;
+            if (relVel > 0)
+                return;
 
             double overlap = minDist - distance;
 
@@ -185,56 +215,91 @@ namespace Logic
             b.X += (overlap / 2) * nx;
             b.Y += (overlap / 2) * ny;
 
-            double va =
-                a.Velocity.X * nx +
-                a.Velocity.Y * ny;
-
-            double vb =
-                b.Velocity.X * nx +
-                b.Velocity.Y * ny;
+            double va = a.Velocity.X * nx + a.Velocity.Y * ny;
+            double vb = b.Velocity.X * nx + b.Velocity.Y * ny;
 
             double ma = a.Mass;
             double mb = b.Mass;
 
-            double vaNew =
-                (va * (ma - mb) + 2 * mb * vb)
-                / (ma + mb);
+            double vaNew = (va * (ma - mb) + 2 * mb * vb) / (ma + mb);
+            double vbNew = (vb * (mb - ma) + 2 * ma * va) / (ma + mb);
 
-            double vbNew =
-                (vb * (mb - ma) + 2 * ma * va)
-                / (ma + mb);
-
-            Vector newVelocityA = new Vector(
+            Vector newA = new(
                 a.Velocity.X + (vaNew - va) * nx,
                 a.Velocity.Y + (vaNew - va) * ny
             );
 
-            Vector newVelocityB = new Vector(
+            Vector newB = new(
                 b.Velocity.X + (vbNew - vb) * nx,
                 b.Velocity.Y + (vbNew - vb) * ny
             );
 
-            double targetSpeed = 3.0;
+            const double targetSpeed = 200.0;
 
-            double speedA = Math.Sqrt(
-                newVelocityA.X * newVelocityA.X +
-                newVelocityA.Y * newVelocityA.Y
-            );
+            a.Velocity = Normalize(newA, targetSpeed);
+            b.Velocity = Normalize(newB, targetSpeed);
 
-            double speedB = Math.Sqrt(
-                newVelocityB.X * newVelocityB.X +
-                newVelocityB.Y * newVelocityB.Y
-            );
 
-            a.Velocity = new Vector(
-                newVelocityA.X / speedA * targetSpeed,
-                newVelocityA.Y / speedA * targetSpeed
-            );
+            LogBall(a);
+            LogBall(b);
+        }
 
-            b.Velocity = new Vector(
-                newVelocityB.X / speedB * targetSpeed,
-                newVelocityB.Y / speedB * targetSpeed
-            );
+        private Vector Normalize(Vector v, double targetSpeed)
+        {
+            double len = Math.Sqrt(v.X * v.X + v.Y * v.Y);
+            if (len == 0) return v;
+
+            return new Vector(v.X / len * targetSpeed, v.Y / len * targetSpeed);
+        }
+
+        private void LogBall(IBall ball)
+        {
+            _logQueue.Enqueue(new BallLogEntry
+            {
+                Time = DateTime.UtcNow,
+                Id = ball.Id,
+                X = ball.X,
+                Y = ball.Y,
+                Vx = ball.Velocity.X,
+                Vy = ball.Velocity.Y
+            });
+        }
+
+        private void StartLoggingThread()
+        {
+            Task.Run(async () =>
+            {
+                using var writer = new StreamWriter("balls_log.txt", true, Encoding.ASCII);
+
+                while (Volatile.Read(ref _running) == 1 || !_logQueue.IsEmpty)
+                {
+                    if (_logQueue.TryDequeue(out var log))
+                    {
+                        await _fileLock.WaitAsync();
+                        try
+                        {
+                            await writer.WriteLineAsync(log.ToString());
+                        }
+                        finally
+                        {
+                            _fileLock.Release();
+                        }
+                    }
+                }
+            });
+        }
+
+        public class BallLogEntry
+        {
+            public DateTime Time { get; set; }
+            public int Id { get; set; }
+            public double X { get; set; }
+            public double Y { get; set; }
+            public double Vx { get; set; }
+            public double Vy { get; set; }
+
+            public override string ToString()
+                => $"{Time:o};{Id};{X};{Y};{Vx};{Vy}";
         }
 
         public double GetBallX(int id) => Balls[id].X;

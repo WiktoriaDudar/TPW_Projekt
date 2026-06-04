@@ -44,7 +44,7 @@ namespace LogicTest
             {
                 Assert.AreEqual(20, b.Diameter);
                 Assert.AreEqual(20, b.Mass);
-                Assert.IsTrue(b.Velocity.Length > 0);
+                Assert.AreEqual(200, b.Velocity.Length, 0.001);
             }
         }
 
@@ -70,9 +70,12 @@ namespace LogicTest
         {
             var repo = new FakeRepository();
             var logic = new LogicAPI(repo);
-            var ball = new Ball(5, 5, 20, "red", new Vector(-3, -3), 20);
+
+            var ball = new Ball(1,5.0, 5.0, 20.0, "red", new Vector(-200, -200), 20.0);
             repo.AddBall(ball);
-            InvokePrivateVoid(logic, "UpdateBallPosition", ball);
+
+            InvokePrivateVoid(logic, "UpdateBallPosition", ball, 0.1);
+
             Assert.IsTrue(ball.Velocity.X > 0);
             Assert.IsTrue(ball.Velocity.Y > 0);
         }
@@ -82,13 +85,17 @@ namespace LogicTest
         {
             var repo = new FakeRepository();
             var logic = new LogicAPI(repo);
-            var a = new Ball(50, 50, 20, "red", new Vector(1, 0), 20);
-            var b = new Ball(60, 50, 20, "red", new Vector(-1, 0), 20);
+
+            var a = new Ball(1,50.0, 50.0, 20.0, "red", new Vector(200, 0), 20.0);
+            var b = new Ball(2,60.0, 50.0, 20.0, "red", new Vector(-200, 0), 20.0);
+
             repo.AddBall(a);
             repo.AddBall(b);
+
             InvokePrivateVoid(logic, "ResolveCollision", a, b);
-            Assert.AreNotEqual(1, a.Velocity.X);
-            Assert.AreNotEqual(-1, b.Velocity.X);
+
+            Assert.AreNotEqual(200, a.Velocity.X);
+            Assert.AreNotEqual(-200, b.Velocity.X);
         }
 
         [TestMethod]

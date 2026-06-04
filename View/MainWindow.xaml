@@ -4,14 +4,20 @@
         xmlns:vm="clr-namespace:ViewModel;assembly=ViewModel"
         Title="TPW Etap 1" Height="650" Width="600">
 
-
     <Grid Margin="10">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Orientation="Horizontal" Margin="0 0 0 10">
+        <TextBlock x:Name="TimerText"
+                   Text="Czas działania: 0.00 s"
+                   FontSize="16"
+                   FontWeight="Bold"
+                   Margin="0 0 0 10"/>
+
+        <StackPanel Orientation="Horizontal" Margin="0 0 0 10" Grid.Row="1">
             <TextBlock Text="Ilość kul:" VerticalAlignment="Center" Margin="0 0 10 0"/>
             <TextBox x:Name="BallCountBox"
                      Width="60"
@@ -27,13 +33,11 @@
                     Click="Start_Click"/>
         </StackPanel>
 
-   
         <Canvas x:Name="BallCanvas"
-                Grid.Row="1"
+                Grid.Row="2"
                 Background="White"
                 SizeChanged="Canvas_SizeChanged">
 
-        
             <Rectangle
                 Stroke="Black"
                 StrokeThickness="3"

@@ -10,8 +10,9 @@ namespace Data
 
         double Diameter { get; }
         double Radius { get; }
+        int Id { get; }
 
-        string Color { get; }
+        string Color { get; set; }
 
         IVector Velocity { get; set; }
         double Mass { get; }

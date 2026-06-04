@@ -31,7 +31,7 @@ namespace DataTest
         public void Ball_CreatesWithCorrectProperties()
         {
             var vel = new TestVector(1, 2);
-            IBall ball = new Ball(10, 20, 8, "red", vel, 3.5);
+            IBall ball = new Ball(1,10, 20, 8, "red", vel, 3.5);
             Assert.AreEqual(10, ball.X);
             Assert.AreEqual(20, ball.Y);
             Assert.AreEqual(8, ball.Diameter);
@@ -45,7 +45,7 @@ namespace DataTest
         public void Ball_PositionChange_RaisesPropertyChanged()
         {
             var vel = new TestVector(0, 0);
-            IBall ball = new Ball(0, 0, 10, "blue", vel, 1);
+            IBall ball = new Ball(1, 0, 0, 10, "blue", vel, 1);
             string? changedProp = null;
             ball.PropertyChanged += (s, e) => changedProp = e.PropertyName;
             ball.X = 50;
@@ -56,7 +56,7 @@ namespace DataTest
         public void Ball_VelocityChange_RaisesPropertyChanged()
         {
             var vel = new TestVector(0, 0);
-            IBall ball = new Ball(0, 0, 10, "blue", vel, 1);
+            IBall ball = new Ball(1,0, 0, 10, "blue", vel, 1);
             string? changedProp = null;
             ball.PropertyChanged += (s, e) => changedProp = e.PropertyName;
             ball.Velocity = new TestVector(5, 5);
@@ -67,7 +67,7 @@ namespace DataTest
         public void Ball_PositionChange_RaisesNewPositionNotification_WithVelocitySnapshot()
         {
             var vel = new TestVector(3, 4);
-            IBall ball = new Ball(0, 0, 10, "blue", vel, 1);
+            IBall ball = new Ball(1, 0, 0, 10, "blue", vel, 1);
 
             IVector? received = null;
             ball.NewPositionNotification += (s, v) => received = v;
@@ -81,7 +81,7 @@ namespace DataTest
         public void Ball_ThreadSafety_GettersReturnConsistentValues()
         {
             var vel = new TestVector(1, 1);
-            IBall ball = new Ball(10, 20, 10, "green", vel, 1);
+            IBall ball = new Ball(1, 10, 20, 10, "green", vel, 1);
 
             for (int i = 0; i < 1000; i++)
             {
@@ -166,6 +166,10 @@ namespace DataTest
             public string Color => "x";
             public IVector Velocity { get; set; } = new Vector(0, 0);
             public double Mass => 1;
+
+            public int Id => throw new NotImplementedException();
+
+            string IBall.Color { get => Color; set => throw new NotImplementedException(); }
 
             public event PropertyChangedEventHandler? PropertyChanged;
             public event EventHandler<IVector>? NewPositionNotification;

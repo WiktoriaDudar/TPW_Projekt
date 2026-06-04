@@ -60,7 +60,27 @@ namespace Data
         public double Diameter { get; }
         public double Radius => Diameter / 2;
 
-        public string Color { get; }
+        public string Color
+        {
+            get
+            {
+                lock (_lock)
+                    return color;
+            }
+            set
+            {
+                lock (_lock)
+                {
+                    color = value;
+                }
+
+                OnPropertyChanged();
+            }
+        }
+
+        private string color;
+
+        public int Id { get; }
 
         public IVector Velocity
         {
@@ -81,13 +101,17 @@ namespace Data
 
         public double Mass { get; }
 
-        public Ball(double x, double y, double diameter, string color, IVector velocity, double mass)
+        public Ball(int id, double x, double y, double diameter, string color, IVector velocity, double mass)
         {
+            Id = id;
             this.x = x;
             this.y = y;
+
             Diameter = diameter;
-            Color = color;
-            this.velocity = velocity;
+
+            this.color = color ?? "red";   
+            this.velocity = velocity ?? throw new ArgumentNullException(nameof(velocity));
+
             Mass = mass;
         }
 

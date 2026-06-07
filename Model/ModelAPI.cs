@@ -1,5 +1,5 @@
-﻿using Data;
-using Logic;
+﻿using Logic;
+using Data;
 
 namespace Model
 {
@@ -10,10 +10,14 @@ namespace Model
         private double windowWidth;
         private double windowHeight;
 
-        public ModelAPI()
+        public ModelAPI(ILogicAPI logic)
         {
-            var repository = new DataRepository();
-            Logic = new LogicAPI(repository);
+            Logic = logic;
+        }
+
+        public ModelAPI()
+            : this(new LogicAPI(new DataRepository()))
+        {
         }
 
         public void SetWindowSize(double width, double height)

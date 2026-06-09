@@ -13,16 +13,17 @@ namespace Logic
     public class LogicAPI : ILogicAPI
     {
         private readonly IDataRepository _repository;
-
         private readonly object _lock = new object();
-
         private static int _nextId = 0;
-
         private readonly Random _random = new Random();
 
         private readonly ConcurrentQueue<BallLogEntry> _logQueue = new();
         private readonly SemaphoreSlim _fileLock = new(1, 1);
 
+        private Timer _timer;
+        private DateTime _lastTime;
+        private int _isUpdating = 0; 
+        private const int TimerIntervalMs = 10;
 
         public double MaxX { get; private set; } = 1000;
         public double MaxY { get; private set; } = 1000;
@@ -52,7 +53,6 @@ namespace Logic
             lock (_lock)
             {
                 _repository.Clear();
-                
 
                 for (int i = 0; i < count; i++)
                 {
@@ -81,7 +81,6 @@ namespace Logic
                     );
 
                     _repository.AddBall(ball);
-                   
                 }
             }
 
@@ -94,49 +93,53 @@ namespace Logic
             if (Interlocked.Exchange(ref _running, 1) == 1)
                 return;
 
-            Task.Run(() =>
-            {
-                var sw = System.Diagnostics.Stopwatch.StartNew();
-
-                double last = sw.Elapsed.TotalSeconds;
-                double accumulator = 0;
-                const double fixedDt = 0.01;
-
-                while (Volatile.Read(ref _running) == 1)
-                {
-                    double now = sw.Elapsed.TotalSeconds;
-                    double frameTime = now - last;
-                    last = now;
-
-                    if (frameTime > 0.05)
-                        frameTime = 0.05;
-
-                    accumulator += frameTime;
-
-                    while (accumulator >= fixedDt)
-                    {
-                        List<IBall> snapshot;
-
-                        lock (_lock)
-                            snapshot = _repository.GetBallsSnapshot().ToList();
-
-                        foreach (var ball in snapshot)
-                        {
-                            UpdateBallPosition(ball, fixedDt);
-                        }
-
-                        for (int i = 0; i < snapshot.Count; i++)
-                            HandleCollisions(snapshot, i);
-
-                        accumulator -= fixedDt;
-                    }
-                }
-            });
+            _lastTime = DateTime.UtcNow;
+            _timer = new Timer(SimulationTick, null, 0, TimerIntervalMs);
         }
 
         public void StopSimulation()
         {
-            Interlocked.Exchange(ref _running, 0);
+            if (Interlocked.Exchange(ref _running, 0) == 0)
+                return;
+            _timer?.Change(Timeout.Infinite, Timeout.Infinite);
+            _timer?.Dispose();
+            _timer = null;
+        }
+
+        private void SimulationTick(object state)
+        {
+            if (Interlocked.Exchange(ref _isUpdating, 1) == 1)
+                return;
+
+            try
+            {
+                if (Volatile.Read(ref _running) == 0)
+                    return;
+
+                DateTime now = DateTime.UtcNow;
+                double dt = (now - _lastTime).TotalSeconds;
+                _lastTime = now;
+
+                List<IBall> snapshot;
+                lock (_lock)
+                {
+                    snapshot = _repository.GetBallsSnapshot().ToList();
+                }
+
+                foreach (var ball in snapshot)
+                {
+                    UpdateBallPosition(ball, dt);
+                }
+
+                for (int i = 0; i < snapshot.Count; i++)
+                {
+                    HandleCollisions(snapshot, i);
+                }
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _isUpdating, 0); 
+            }
         }
 
         private void UpdateBallPosition(IBall ball, double dt)
@@ -150,28 +153,24 @@ namespace Logic
             {
                 ball.X = r;
                 ball.Velocity = new Vector(-ball.Velocity.X, ball.Velocity.Y);
-
             }
 
             if (ball.X + r > MaxX)
             {
                 ball.X = MaxX - r;
                 ball.Velocity = new Vector(-ball.Velocity.X, ball.Velocity.Y);
-
             }
 
             if (ball.Y - r < 0)
             {
                 ball.Y = r;
                 ball.Velocity = new Vector(ball.Velocity.X, -ball.Velocity.Y);
-
             }
 
             if (ball.Y + r > MaxY)
             {
                 ball.Y = MaxY - r;
                 ball.Velocity = new Vector(ball.Velocity.X, -ball.Velocity.Y);
-
             }
 
             LogBall(ball);
@@ -239,7 +238,6 @@ namespace Logic
             a.Velocity = Normalize(newA, targetSpeed);
             b.Velocity = Normalize(newB, targetSpeed);
 
-
             LogBall(a);
             LogBall(b);
         }
@@ -284,6 +282,10 @@ namespace Logic
                         {
                             _fileLock.Release();
                         }
+                    }
+                    else
+                    {
+                        await Task.Delay(10);
                     }
                 }
             });
